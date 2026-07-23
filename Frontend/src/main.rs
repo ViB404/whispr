@@ -5,22 +5,40 @@ use js_sys::wasm_bindgen::JsValue;
 use js_sys::{Array, Object, Reflect};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::{window, CryptoKey};
+use web_sys::{console, window, CryptoKey};
 
-fn main() {
+fn main() -> std::io::Result<()> {
     launch(App);
+
+    Ok(())
 }
 
 #[component]
 fn App() -> Element {
+    let mut username = use_signal(String::new);
+
     rsx! {
         h1 { "Generate Keys 🔑" }
+
+        input {
+            placeholder: "Username",
+            value: "{username}",
+            oninput: move |e| username.set(e.value()),
+        }
+
         button {
             onclick: move |_| {
-                spawn_local(async {
-                    generate_keys().await.expect("Something Went Wrong");
+                let username = username();
+
+                spawn_local(async move {
+                    println!("Registering {username}");
+
+                    generate_keys()
+                        .await
+                        .expect("Something Went Wrong");
                 });
             },
+
             "Generate"
         }
     }

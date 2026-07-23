@@ -18,6 +18,13 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="RsBuildProfile:dev" />
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Rust File" />
+      </list>
+    </option>
+  </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="qh6crd8b" />
   </component>
@@ -95,7 +102,8 @@
       <workItem from="1784544068898" duration="2704000" />
       <workItem from="1784551952079" duration="1289000" />
       <workItem from="1784634425045" duration="1576000" />
-      <workItem from="1784708627099" duration="5108000" />
+      <workItem from="1784708627099" duration="5833000" />
+      <workItem from="1784719437763" duration="1909000" />
     </task>
     <servers />
   </component>

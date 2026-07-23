@@ -1,36 +1,7 @@
-[package]
-name = "e2ee"
-version = "0.1.0"
-authors = ["ViB404 <justvibrio@gmail.com>"]
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-dioxus = { version = "0.7.1", features = [] }
-wasm-bindgen-futures = "0.4.76"
-anyhow = "1.0.104"
-js-sys = "0.3.103"
-wasm-bindgen = "0.2.126"
-serde = { version = "1.0", features = ["derive"] }
-indexed_db_futures = { version = "0.6.4", features = ["tx-done"] }
-log = "0.4.33"
-
-[features]
-default = ["web"]
-web = ["dioxus/web"]
-desktop = ["dioxus/desktop"]
-mobile = ["dioxus/mobile"]
-
-[dependencies.web-sys]
-version = "0.3"
-features = [
-    "Window",
-    "Crypto",
-    "SubtleCrypto",
-    "CryptoKey",
-    "CryptoKeyPair",
-    "console",
-    "IdbDatabase",
-    "IdbFactory",
+[workspace]
+members = [
+    "Frontend",
+    "Backend",
 ]
+
+resolver = "2"
