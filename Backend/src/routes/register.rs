@@ -12,12 +12,10 @@ pub struct RegisterResponse {
     pub message: String,
 }
 
-use actix_web::{post, web, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, post, web};
 
-use crate::{
-    database::{connect_database, save_user},
-};
 use crate::database::NewUser;
+use crate::database::{connect_database, save_user};
 
 #[post("/register")]
 pub async fn register(payload: web::Json<RegisterRequest>) -> impl Responder {
@@ -39,6 +37,12 @@ pub async fn register(payload: web::Json<RegisterRequest>) -> impl Responder {
             message: "User registered successfully".into(),
         }),
 
-        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+        Err(err) => {
+            if err.to_string().contains("UNIQUE constraint failed") {
+                return HttpResponse::Conflict().body("Username already exists");
+            }
+
+            HttpResponse::InternalServerError().body(err.to_string())
+        }
     }
 }

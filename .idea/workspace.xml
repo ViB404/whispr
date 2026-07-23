@@ -5,7 +5,10 @@
   </component>
   <component name="CargoProjects">
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml">
-      <package file="$PROJECT_DIR$">
+      <package file="$PROJECT_DIR$/Backend">
+        <feature name="default" enabled="true" />
+      </package>
+      <package file="$PROJECT_DIR$/Frontend">
         <feature name="default" enabled="true" />
       </package>
     </cargoProject>
@@ -27,6 +30,9 @@
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="qh6crd8b" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 3,
@@ -50,9 +56,23 @@
     &quot;last_opened_file_path&quot;: &quot;/home/vib/coding/e2ee&quot;,
     &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
     &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
-    &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;
+    &quot;org.rust.disableDetachedFileInspection/home/vib/coding/e2ee/Backend/src/database.rs&quot;: &quot;true&quot;,
+    &quot;org.rust.disableDetachedFileInspection/home/vib/coding/e2ee/Backend/src/main.rs&quot;: &quot;true&quot;,
+    &quot;org.rust.disableDetachedFileInspection/home/vib/coding/e2ee/src/Frontend/main.rs&quot;: &quot;true&quot;,
+    &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;,
+    &quot;org.rust.hideNoCargoProjectNotifications/home/vib/coding/e2ee/Backend/src/main.rs&quot;: &quot;true&quot;,
+    &quot;org.rust.hideNoCargoProjectNotifications/home/vib/coding/e2ee/src/Frontend/main.rs&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
 }</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Frontend/src/api" />
+      <recent name="$PROJECT_DIR$/Backend/src" />
+      <recent name="$PROJECT_DIR$/src/Backend" />
+      <recent name="$PROJECT_DIR$/src/Frontend" />
+    </key>
+  </component>
   <component name="RunManager" selected="Cargo.Run e2ee">
     <configuration name="Run e2ee" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="run --package e2ee --bin e2ee" />
@@ -104,6 +124,10 @@
       <workItem from="1784634425045" duration="1576000" />
       <workItem from="1784708627099" duration="5833000" />
       <workItem from="1784719437763" duration="1909000" />
+      <workItem from="1784783225748" duration="5106000" />
+      <workItem from="1784795702654" duration="683000" />
+      <workItem from="1784796476452" duration="673000" />
+      <workItem from="1784802911805" duration="4822000" />
     </task>
     <servers />
   </component>
