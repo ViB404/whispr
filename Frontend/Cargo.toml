@@ -7,13 +7,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dioxus = { version = "0.7.1", features = [] }
+dioxus = { version = "0.7.1", features = ["router"] }
 wasm-bindgen-futures = "0.4.76"
 anyhow = "1.0.104"
 js-sys = "0.3.103"
 wasm-bindgen = "0.2.126"
 indexed_db_futures = { version = "0.6.4", features = ["tx-done"] }
-reqwest = { version = "0.12", default-features = false, features = ["json"] }
+reqwest = { version = "0.13.4", default-features = false, features = ["json"] }
 serde = { version = "1.0.229", features = ["derive"] }
 
 [features]
@@ -33,4 +33,6 @@ features = [
     "console",
     "IdbDatabase",
     "IdbFactory",
+    "TextEncoder",
+    "TextDecoder"
 ]

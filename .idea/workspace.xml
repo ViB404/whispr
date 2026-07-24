@@ -62,7 +62,7 @@
     &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;,
     &quot;org.rust.hideNoCargoProjectNotifications/home/vib/coding/e2ee/Backend/src/main.rs&quot;: &quot;true&quot;,
     &quot;org.rust.hideNoCargoProjectNotifications/home/vib/coding/e2ee/src/Frontend/main.rs&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
+    &quot;settings.editor.selected.configurable&quot;: &quot;language.rust.cargo.check&quot;
   }
 }</component>
   <component name="RecentsManager">
@@ -72,6 +72,9 @@
       <recent name="$PROJECT_DIR$/src/Backend" />
       <recent name="$PROJECT_DIR$/src/Frontend" />
     </key>
+  </component>
+  <component name="RsExternalLinterProjectSettings">
+    <option name="tool" value="Clippy" />
   </component>
   <component name="RunManager" selected="Cargo.Run e2ee">
     <configuration name="Run e2ee" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
@@ -127,7 +130,9 @@
       <workItem from="1784783225748" duration="5106000" />
       <workItem from="1784795702654" duration="683000" />
       <workItem from="1784796476452" duration="673000" />
-      <workItem from="1784802911805" duration="4822000" />
+      <workItem from="1784802911805" duration="5033000" />
+      <workItem from="1784854805848" duration="9402000" />
+      <workItem from="1784877897443" duration="2697000" />
     </task>
     <servers />
   </component>

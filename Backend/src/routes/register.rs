@@ -38,10 +38,6 @@ pub async fn register(payload: web::Json<RegisterRequest>) -> impl Responder {
         }),
 
         Err(err) => {
-            if err.to_string().contains("UNIQUE constraint failed") {
-                return HttpResponse::Conflict().body("Username already exists");
-            }
-
             HttpResponse::InternalServerError().body(err.to_string())
         }
     }
