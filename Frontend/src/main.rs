@@ -4,6 +4,7 @@ mod indexeddb;
 mod message;
 mod types;
 
+use crate::api::user::register_user;
 use crate::message::{decrypt_message, encrypt_message};
 use anyhow::Result;
 use dioxus::prelude::*;
@@ -176,7 +177,7 @@ fn Decrypt() -> Element {
 
                 Err(err) => {
                     eprintln!("Decryption failed!");
-                    web_sys::console::error_1(&err);
+                    console::error_1(&err);
                 }
             }
         });
@@ -193,13 +194,10 @@ async fn register(username: String) -> Result<()> {
 
     let keys = crypto::generate_keypair().await?;
 
-    api::register_user::register_user(username, keys.public.clone()).await?;
+    register_user(username, keys.public.clone()).await?;
 
     indexeddb::save_key(indexeddb::KeyType::Public, keys.public.clone()).await?;
     indexeddb::save_key(indexeddb::KeyType::Private, keys.private.clone()).await?;
-
-    let public = get_key(indexeddb::KeyType::Public).await?;
-    let private = get_key(indexeddb::KeyType::Private).await?;
 
     Ok(())
 }

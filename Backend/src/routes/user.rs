@@ -1,3 +1,6 @@
+use crate::database::{connect_database, save_user};
+use crate::database::{get_user_by_username, NewUser};
+use actix_web::{get, post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
@@ -11,11 +14,6 @@ pub struct RegisterResponse {
     pub id: i64,
     pub message: String,
 }
-
-use actix_web::{HttpResponse, Responder, post, web};
-
-use crate::database::NewUser;
-use crate::database::{connect_database, save_user};
 
 #[post("/register")]
 pub async fn register(payload: web::Json<RegisterRequest>) -> impl Responder {
@@ -37,8 +35,22 @@ pub async fn register(payload: web::Json<RegisterRequest>) -> impl Responder {
             message: "User registered successfully".into(),
         }),
 
+        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+    }
+}
+
+#[get("/users/{username}")]
+pub async fn get_user(username: web::Path<String>) -> impl Responder {
+    let conn = match connect_database().await {
+        Ok(conn) => conn,
         Err(err) => {
-            HttpResponse::InternalServerError().body(err.to_string())
+            return HttpResponse::InternalServerError().body(err.to_string());
         }
+    };
+
+    match get_user_by_username(&conn, &username) {
+        Ok(user) => HttpResponse::Ok().json(user),
+
+        Err(_) => HttpResponse::NotFound().body("User not found"),
     }
 }

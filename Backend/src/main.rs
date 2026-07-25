@@ -1,11 +1,11 @@
-use actix_web::{http, App, HttpServer};
-use crate::routes::register::register;
-use actix_web::middleware::Logger;
-use env_logger::Env;
+use crate::routes::config;
 use actix_cors::Cors;
+use actix_web::middleware::Logger;
+use actix_web::{http, App, HttpServer};
+use env_logger::Env;
 
-pub mod routes;
 pub mod database;
+pub mod routes;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -20,15 +20,12 @@ async fn main() -> std::io::Result<()> {
                     .allowed_origin("http://127.0.0.1:8080")
                     .allowed_origin("http://localhost:8080")
                     .allowed_methods(vec!["GET", "POST"])
-                    .allowed_headers(vec![
-                        http::header::CONTENT_TYPE,
-                        http::header::ACCEPT,
-                    ])
+                    .allowed_headers(vec![http::header::CONTENT_TYPE, http::header::ACCEPT])
                     .max_age(3600),
             )
-            .service(register)
+            .configure(config)
     })
-        .bind(("127.0.0.1", 6767))?
-        .run()
-        .await
+    .bind(("127.0.0.1", 6767))?
+    .run()
+    .await
 }

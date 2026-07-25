@@ -31,3 +31,25 @@ pub async fn register_user(username: String, public_key: Vec<u8>) -> Result<Regi
 
     Ok(response.json().await?)
 }
+
+#[derive(Debug, Deserialize)]
+pub struct User {
+    pub id: i64,
+    pub username: String,
+    pub public_key: Vec<u8>,
+}
+
+pub async fn get_user(username: &str) -> Result<User> {
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get(format!("http://127.0.0.1:6767/users/{username}"))
+        .send()
+        .await?;
+
+    if !response.status().is_success() {
+        bail!("{}", response.text().await?);
+    }
+
+    Ok(response.json().await?)
+}
