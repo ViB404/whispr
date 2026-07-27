@@ -3,20 +3,22 @@ mod crypto;
 mod indexeddb;
 mod message;
 mod types;
+pub mod user;
+pub mod routes;
 
-use crate::api::user::register_user;
 use crate::message::{decrypt_message, encrypt_message};
-use anyhow::Result;
 use dioxus::prelude::*;
 use indexeddb::get_key;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::console;
+use crate::user::register;
+use crate::routes::user_route::SendMessage;
 
 fn main() {
     launch(App);
 }
 
-#[derive(Routable, Clone, PartialEq)]
+#[derive(Routable, Clone)]
 enum Route {
     #[route("/")]
     Home {},
@@ -24,6 +26,8 @@ enum Route {
     Encrypt {},
     #[route("/decrypt")]
     Decrypt {},
+    #[route("/user/:id")]
+    SendMessage { id: String },
 }
 
 #[component]
@@ -51,8 +55,8 @@ fn Home() -> Element {
                 let username = username();
 
                 spawn_local(async move {
-                    if let Err(err) = register(username).await {
-                        eprintln!("{err:#}");
+                    if let Err(_err) = register(username).await {
+                        eprintln!("Something went wrong!");
                     }
                 });
             },
@@ -114,7 +118,7 @@ fn Encrypt() -> Element {
                 }
 
                 Err(err) => {
-                    web_sys::console::error_1(&err);
+                    console::error_1(&err);
                 }
             }
         });
@@ -187,17 +191,4 @@ fn Decrypt() -> Element {
             p { "{output}" }
             Link { to: Route::Home {}, "Home" }
         }
-}
-
-async fn register(username: String) -> Result<()> {
-    console::log_1(&"Generating keypair...".into());
-
-    let keys = crypto::generate_keypair().await?;
-
-    register_user(username, keys.public.clone()).await?;
-
-    indexeddb::save_key(indexeddb::KeyType::Public, keys.public.clone()).await?;
-    indexeddb::save_key(indexeddb::KeyType::Private, keys.private.clone()).await?;
-
-    Ok(())
 }
