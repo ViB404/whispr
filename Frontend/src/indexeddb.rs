@@ -6,6 +6,7 @@ use wasm_bindgen::JsValue;
 pub enum KeyType {
     Public,
     Private,
+    UserId,
 }
 
 impl KeyType {
@@ -13,8 +14,14 @@ impl KeyType {
         match self {
             Self::Public => "public",
             Self::Private => "private",
+            Self::UserId => "user_id",
         }
     }
+}
+
+pub enum StoredValue {
+    Bytes(Vec<u8>),
+    UserId(i64),
 }
 
 async fn open_db() -> Result<Database> {
@@ -28,14 +35,7 @@ async fn open_db() -> Result<Database> {
         .map_err(|e| anyhow!("Failed to open IndexedDB: {e}"))
 }
 
-pub async fn save_key(key: KeyType, data: Vec<u8>) -> Result<()> {
-    println!("Saving {} key", key.as_str());
-    println!("Length: {}", data.len());
-    println!(
-        "First 16 bytes: {:02X?}",
-        &data[..std::cmp::min(16, data.len())]
-    );
-
+pub async fn save(key: KeyType, value: StoredValue) -> Result<()> {
     let db = open_db().await?;
 
     let tx = db
@@ -48,11 +48,16 @@ pub async fn save_key(key: KeyType, data: Vec<u8>) -> Result<()> {
         .object_store("keys")
         .map_err(|e| anyhow!("Failed to open object store: {e}"))?;
 
+    let value = match value {
+        StoredValue::Bytes(data) => JsValue::from(Uint8Array::from(data.as_slice())),
+        StoredValue::UserId(id) => JsValue::from_f64(id as f64),
+    };
+
     store
-        .put(JsValue::from(Uint8Array::from(data.as_slice())))
+        .put(value)
         .with_key(JsValue::from_str(key.as_str()))
         .await
-        .map_err(|e| anyhow!("Failed to save key: {e}"))?;
+        .map_err(|e| anyhow!("Failed to save value: {e}"))?;
 
     tx.commit()
         .await
@@ -61,24 +66,39 @@ pub async fn save_key(key: KeyType, data: Vec<u8>) -> Result<()> {
     Ok(())
 }
 
-pub async fn get_key(key: KeyType) -> Result<Vec<u8>> {
+pub async fn get(key: KeyType) -> Result<StoredValue> {
     let db = open_db().await?;
+
     let tx = db
         .transaction("keys")
         .with_mode(TransactionMode::Readonly)
         .build()
         .map_err(|e| anyhow!("Failed to create transaction: {e}"))?;
+
     let store = tx
         .object_store("keys")
         .map_err(|e| anyhow!("Failed to open object store: {e}"))?;
+
     let value = store
         .get(JsValue::from_str(key.as_str()))
         .await
-        .map_err(|e| anyhow!("Failed to get key: {e}"))?
+        .map_err(|e| anyhow!("Failed to get value: {e}"))?
         .ok_or_else(|| anyhow!("Key not found"))?;
-    let data = js_sys::Uint8Array::new(&value).to_vec();
+
     tx.commit()
         .await
         .map_err(|e| anyhow!("Failed to commit transaction: {e}"))?;
-    Ok(data)
+
+    match key {
+        KeyType::Public | KeyType::Private => {
+            Ok(StoredValue::Bytes(Uint8Array::new(&value).to_vec()))
+        }
+        KeyType::UserId => {
+            let id = value
+                .as_f64()
+                .ok_or_else(|| anyhow!("Stored value is not a number"))?;
+
+            Ok(StoredValue::UserId(id as i64))
+        }
+    }
 }

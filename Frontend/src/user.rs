@@ -1,18 +1,31 @@
-use anyhow::Error;
-use wasm_bindgen::JsValue;
-use web_sys::console;
 use crate::api::user::register_user;
 use crate::{crypto, indexeddb};
+use web_sys::console;
 
-pub async fn register(username: String) -> Result<(), Error> {
+pub async fn register(username: String) -> anyhow::Result<()> {
     console::log_1(&"Generating keypair...".into());
 
-    let keys = crypto::generate_keypair().await.expect("There is something went wrong!");
+    let keys = crypto::generate_keypair().await?;
 
-    register_user(username, keys.public.clone()).await.expect("Can't register the user");
+    let user = register_user(username, keys.public.clone()).await?;
 
-    indexeddb::save_key(indexeddb::KeyType::Public, keys.public.clone()).await?;
-    indexeddb::save_key(indexeddb::KeyType::Private, keys.private.clone()).await?;
+    indexeddb::save(
+        indexeddb::KeyType::Public,
+        indexeddb::StoredValue::Bytes(keys.public),
+    )
+    .await?;
+
+    indexeddb::save(
+        indexeddb::KeyType::Private,
+        indexeddb::StoredValue::Bytes(keys.private),
+    )
+    .await?;
+
+    indexeddb::save(
+        indexeddb::KeyType::UserId,
+        indexeddb::StoredValue::UserId(user.id),
+    )
+    .await?;
 
     Ok(())
 }

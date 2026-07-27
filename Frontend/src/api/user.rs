@@ -32,7 +32,7 @@ pub async fn register_user(username: String, public_key: Vec<u8>) -> Result<Regi
     Ok(response.json().await?)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct User {
     pub id: i64,
     pub username: String,

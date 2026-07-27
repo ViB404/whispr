@@ -2,17 +2,17 @@ mod api;
 mod crypto;
 mod indexeddb;
 mod message;
+pub mod routes;
 mod types;
 pub mod user;
-pub mod routes;
 
+use crate::api::message::send_message;
 use crate::message::{decrypt_message, encrypt_message};
+use crate::routes::user_route::SendMessagePage;
+use crate::user::register;
 use dioxus::prelude::*;
-use indexeddb::get_key;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::console;
-use crate::user::register;
-use crate::routes::user_route::SendMessage;
 
 fn main() {
     launch(App);
@@ -26,8 +26,8 @@ enum Route {
     Encrypt {},
     #[route("/decrypt")]
     Decrypt {},
-    #[route("/user/:id")]
-    SendMessage { id: String },
+    #[route("/user/:username")]
+    SendMessagePage { username: String },
 }
 
 #[component]
@@ -78,59 +78,63 @@ fn Encrypt() -> Element {
     let mut output = use_signal(String::new);
 
     rsx! {
-            h1 { "Encrypt" }
+                h1 { "Encrypt" }
 
-            input {
-                placeholder: "Message",
-                value: "{message}",
-                oninput: move |e| message.set(e.value()),
-            }
-
-            button {
-                onclick: move |_| {
-        let msg = message();
-
-        spawn_local(async move {
-            let key = match get_key(indexeddb::KeyType::Public).await {
-                Ok(key) => key,
-                Err(e) => {
-                    eprintln!("Failed to load public key: {:#?}", e);
-                    return;
+                input {
+                    placeholder: "Message",
+                    value: "{message}",
+                    oninput: move |e| message.set(e.value()),
                 }
-            };
 
-            if !key.is_empty() {
-                println!(
-                    "First 32 bytes: {:02X?}",
-                    &key[..std::cmp::min(32, key.len())]
-                );
-            }
+                button {
+                    onclick: move |_| {
+            let msg = message();
 
-            match encrypt_message(&msg, &key).await {
-                Ok(encrypted) => {
-                    output.set(
-                        encrypted
-                            .iter()
-                            .map(|b| b.to_string())
-                            .collect::<Vec<_>>()
-                            .join(","),
+            spawn_local(async move {
+                let key = match indexeddb::get(indexeddb::KeyType::Public).await {
+        Ok(indexeddb::StoredValue::Bytes(key)) => key,
+        Ok(_) => {
+            eprintln!("Stored value is not a public key");
+            return;
+        }
+        Err(e) => {
+            eprintln!("Failed to load public key: {:#?}", e);
+            return;
+        }
+                };
+
+                if !key.is_empty() {
+                    println!(
+                        "First 32 bytes: {:02X?}",
+                        &key[..std::cmp::min(32, key.len())]
                     );
                 }
 
-                Err(err) => {
-                    console::error_1(&err);
+                match encrypt_message(&msg, &key).await {
+                    Ok(encrypted) => {
+                        output.set(
+                            encrypted
+                                .iter()
+                                .map(|b| b.to_string())
+                                .collect::<Vec<_>>()
+                                .join(","),
+                        );
+                    }
+
+                    Err(err) => {
+                        console::error_1(&err);
+                    }
                 }
-            }
-        });
-    },
+            });
+        },
 
-                "Encrypt"
-            }
+                    "Encrypt"
+                }
 
-            p { "{output}" }
+        p { "{output}" }
 
-            Link { to: Route::Home {}, "Home" }
-        }
+        Link { to: Route::Home {}, "Home" }
+    }
 }
 
 #[component]
@@ -139,56 +143,60 @@ fn Decrypt() -> Element {
     let mut output = use_signal(String::new);
 
     rsx! {
-            h1 { "Decrypt" }
+                h1 { "Decrypt" }
 
-            textarea {
-                value: "{encrypted}",
-                oninput: move |e| encrypted.set(e.value()),
-            }
-
-            button {
-                onclick: move |_| {
-        let text = encrypted();
-
-        spawn_local(async move {
-
-            let key = match get_key(indexeddb::KeyType::Private).await {
-                Ok(key) => key,
-                Err(e) => {
-                    eprintln!("Failed to load private key: {:#?}", e);
-                    return;
-                }
-            };
-
-            if !key.is_empty() {
-                println!(
-                    "First 32 bytes: {:02X?}",
-                    &key[..std::cmp::min(32, key.len())]
-                );
-            }
-
-            let bytes: Vec<u8> = text
-                .split(',')
-                .filter_map(|v| v.trim().parse::<u8>().ok())
-                .collect();
-
-            match decrypt_message(&bytes, &key).await {
-                Ok(message) => {
-                    println!("Decryption successful!");
-                    println!("Message: {}", message);
-                    output.set(message);
+                textarea {
+                    value: "{encrypted}",
+                    oninput: move |e| encrypted.set(e.value()),
                 }
 
-                Err(err) => {
-                    eprintln!("Decryption failed!");
-                    console::error_1(&err);
-                }
-            }
-        });
-    },
-                "Decrypt"
-            }
-            p { "{output}" }
-            Link { to: Route::Home {}, "Home" }
+                button {
+                    onclick: move |_| {
+            let text = encrypted();
+
+            spawn_local(async move {
+
+                let key = match indexeddb::get(indexeddb::KeyType::Private).await {
+        Ok(indexeddb::StoredValue::Bytes(key)) => key,
+        Ok(_) => {
+            eprintln!("Stored value is not a private key");
+            return;
         }
+        Err(e) => {
+            eprintln!("Failed to load private key: {:#?}", e);
+            return;
+        }
+    };
+
+                if !key.is_empty() {
+                    println!(
+                        "First 32 bytes: {:02X?}",
+                        &key[..std::cmp::min(32, key.len())]
+                    );
+                }
+
+                let bytes: Vec<u8> = text
+                    .split(',')
+                    .filter_map(|v| v.trim().parse::<u8>().ok())
+                    .collect();
+
+                match decrypt_message(&bytes, &key).await {
+                    Ok(message) => {
+                        println!("Decryption successful!");
+                        println!("Message: {}", message);
+                        output.set(message);
+                    }
+
+                    Err(err) => {
+                        eprintln!("Decryption failed!");
+                        console::error_1(&err);
+                    }
+                }
+            });
+        },
+                    "Decrypt"
+                }
+                p { "{output}" }
+                Link { to: Route::Home {}, "Home" }
+            }
 }
