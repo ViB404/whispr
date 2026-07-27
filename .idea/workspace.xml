@@ -73,9 +73,6 @@
       <recent name="$PROJECT_DIR$/src/Frontend" />
     </key>
   </component>
-  <component name="RsExternalLinterProjectSettings">
-    <option name="tool" value="Clippy" />
-  </component>
   <component name="RunManager" selected="Cargo.Run e2ee">
     <configuration name="Run e2ee" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="run --package e2ee --bin e2ee" />
@@ -134,7 +131,11 @@
       <workItem from="1784854805848" duration="9402000" />
       <workItem from="1784877897443" duration="3093000" />
       <workItem from="1784898381938" duration="471000" />
-      <workItem from="1784946163219" duration="4121000" />
+      <workItem from="1784946163219" duration="4549000" />
+      <workItem from="1784965293446" duration="89000" />
+      <workItem from="1785060027930" duration="5808000" />
+      <workItem from="1785135361951" duration="3599000" />
+      <workItem from="1785148517181" duration="4039000" />
     </task>
     <servers />
   </component>

@@ -36,19 +36,20 @@ pub fn save_user(conn: &Connection, user: &NewUser) -> Result<i64, Error> {
 fn init_database(conn: &Connection) -> Result<(), Error> {
     conn.execute_batch(
         "
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL UNIQUE,
-            public_key BLOB NOT NULL
-        );
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        public_key BLOB NOT NULL
+    );
 
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            sender_id INTEGER NOT NULL,
-            receiver_id INTEGER NOT NULL,
-            ciphertext BLOB NOT NULL,
-            created_at INTEGER NOT NULL DEFAULT (unixepoch()),
-        ",
+    CREATE TABLE IF NOT EXISTS messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender_id INTEGER NOT NULL,
+        receiver_id INTEGER NOT NULL,
+        ciphertext BLOB NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    ",
     )?;
 
     Ok(())
