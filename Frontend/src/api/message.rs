@@ -14,7 +14,7 @@ pub struct SendMessageResponse {
     pub message: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Message {
     pub id: i64,
     pub sender_id: i64,
@@ -67,7 +67,7 @@ pub async fn get_conversation(user1: i64, user2: i64) -> Result<Vec<Message>> {
 
     let response = client
         .get(format!(
-            "http://127.0.0.1:6767/conversations/{user1}/{user2}"
+            "http://127.0.0.1:6767/messages/{user1}/{user2}"
         ))
         .send()
         .await?;
