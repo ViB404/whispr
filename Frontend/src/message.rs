@@ -1,5 +1,8 @@
+use crate::api::message::Message;
+use crate::indexeddb::SentMessage;
 use js_sys::futures::JsFuture;
 use js_sys::{Array, Reflect, Uint8Array};
+use std::collections::HashMap;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{CryptoKey, TextDecoder, TextEncoder};
 
@@ -77,4 +80,45 @@ pub async fn decrypt_message(encrypted: &[u8], key: &[u8]) -> Result<String, JsV
     let text = decoder.decode_with_u8_array(&bytes)?;
 
     Ok(text)
+}
+
+pub fn merge_messages(
+    current_user_id: i64,
+    local: Vec<SentMessage>,
+    server: Vec<Message>,
+) -> Vec<SentMessage> {
+    let mut local_map: HashMap<(i64, i64, i64), SentMessage> = local
+        .into_iter()
+        .map(|m| ((m.sender_id, m.receiver_id, m.timestamp), m))
+        .collect();
+
+    let mut merged: Vec<SentMessage> = Vec::with_capacity(server.len());
+
+    for msg in server {
+        let timestamp = msg.created_at * 1000;
+
+        if msg.sender_id == current_user_id {
+            if let Some(local_msg) = local_map.remove(&(msg.sender_id, msg.receiver_id, timestamp))
+            {
+                merged.push(local_msg);
+            } else {
+                merged.push(SentMessage {
+                    sender_id: msg.sender_id,
+                    receiver_id: msg.receiver_id,
+                    message: "Can't be decoded".to_string(),
+                    timestamp,
+                });
+            }
+        } else {
+            merged.push(SentMessage {
+                sender_id: msg.sender_id,
+                receiver_id: msg.receiver_id,
+                message: "Can't be decoded".to_string(),
+                timestamp,
+            });
+        }
+    }
+
+    merged.sort_by_key(|m| m.timestamp);
+    merged
 }

@@ -1,13 +1,56 @@
+use std::collections::HashMap;
+
 use crate::{
     api::{
-        message::{get_conversation, send_message},
+        message::{get_conversation, send_message, Message},
         user::get_user,
     },
-    indexeddb::{self, KeyType, StoredValue},
+    indexeddb::{self, KeyType, SentMessage, StoredValue},
     message::{decrypt_message, encrypt_message},
 };
 
 use dioxus::prelude::*;
+
+pub fn merge_messages(
+    current_user_id: i64,
+    local: Vec<SentMessage>,
+    server: Vec<Message>,
+) -> Vec<SentMessage> {
+    let mut local_map: HashMap<(i64, i64, i64), SentMessage> = local
+        .into_iter()
+        .map(|m| ((m.sender_id, m.receiver_id, m.timestamp), m))
+        .collect();
+
+    let mut merged: Vec<SentMessage> = Vec::with_capacity(server.len());
+
+    for msg in server {
+        let timestamp = msg.created_at * 1000;
+
+        if msg.sender_id == current_user_id {
+            if let Some(local_msg) = local_map.remove(&(msg.sender_id, msg.receiver_id, timestamp))
+            {
+                merged.push(local_msg);
+            } else {
+                merged.push(SentMessage {
+                    sender_id: msg.sender_id,
+                    receiver_id: msg.receiver_id,
+                    message: "Can't be decoded".to_string(),
+                    timestamp,
+                });
+            }
+        } else {
+            merged.push(SentMessage {
+                sender_id: msg.sender_id,
+                receiver_id: msg.receiver_id,
+                message: "Can't be decoded".to_string(),
+                timestamp,
+            });
+        }
+    }
+
+    merged.sort_by_key(|m| m.timestamp);
+    merged
+}
 
 #[component]
 pub fn SendMessagePage(username: String) -> Element {
@@ -41,14 +84,14 @@ pub fn SendMessagePage(username: String) -> Element {
         let sender_id_opt = {
             let guard = user_id.read();
             match &*guard {
-                Some(Ok(id)) => Some(id.clone()),
+                Some(Ok(id)) => Some(*id),
                 _ => None,
             }
         };
         let receiver_id_opt = {
             let guard = user.read();
             match &*guard {
-                Some(Ok(u)) => Some(u.id.clone()),
+                Some(Ok(u)) => Some(u.id),
                 _ => None,
             }
         };
@@ -61,8 +104,11 @@ pub fn SendMessagePage(username: String) -> Element {
         }
     });
 
-    let decrypted_conversation = use_resource(move || {
-        let conv_state: Option<Result<Vec<crate::api::message::Message>, String>> = {
+    let mut local_messages =
+        use_resource(|| async { indexeddb::get_messages().await.unwrap_or_default() });
+
+    let processed_conversation = use_resource(move || {
+        let conv_state: Option<Result<Vec<Message>, String>> = {
             let guard = conversation.read();
             match &*guard {
                 Some(Ok(msgs)) => Some(Ok(msgs.clone())),
@@ -80,8 +126,24 @@ pub fn SendMessagePage(username: String) -> Element {
             }
         };
 
+        let local_state: Vec<SentMessage> = {
+            let guard = local_messages.read();
+            match &*guard {
+                Some(msgs) => msgs.clone(),
+                None => Vec::new(),
+            }
+        };
+
+        let current_user_id = {
+            let guard = user_id.read();
+            match &*guard {
+                Some(Ok(id)) => Some(*id),
+                _ => None,
+            }
+        };
+
         async move {
-            let messages = match conv_state {
+            let server_msgs = match conv_state {
                 Some(Ok(m)) => m,
                 Some(Err(e)) => return Err(anyhow::anyhow!(e)),
                 None => return Ok(Vec::new()),
@@ -93,19 +155,38 @@ pub fn SendMessagePage(username: String) -> Element {
                 None => return Ok(Vec::new()),
             };
 
-            if messages.is_empty() || key.is_empty() {
+            let c_id = match current_user_id {
+                Some(id) => id,
+                None => return Ok(Vec::new()),
+            };
+
+            if server_msgs.is_empty() || key.is_empty() {
                 return Ok(Vec::new());
             }
 
-            let mut decrypted = Vec::new();
-            for msg in messages {
-                let text = decrypt_message(&msg.ciphertext, &key)
-                    .await
-                    .map_err(|e| anyhow::anyhow!("{:?}", e))?;
-                decrypted.push((msg, text));
+            let merged = merge_messages(c_id, local_state, server_msgs.clone());
+            let mut final_list = Vec::with_capacity(merged.len());
+
+            for mut msg in merged {
+                if msg.sender_id != c_id {
+                    if let Some(server_msg) = server_msgs.iter().find(|sm| {
+                        sm.sender_id == msg.sender_id && sm.created_at * 1000 == msg.timestamp
+                    }) {
+                        match decrypt_message(&server_msg.ciphertext, &key).await {
+                            Ok(text) => msg.message = text,
+                            Err(e) => {
+                                web_sys::console::error_1(
+                                    &format!("Decryption error: {:?}", e).into(),
+                                );
+                                msg.message = "Failed to decrypt".to_string();
+                            }
+                        }
+                    }
+                }
+                final_list.push(msg);
             }
 
-            Ok::<_, anyhow::Error>(decrypted)
+            Ok::<_, anyhow::Error>(final_list)
         }
     });
 
@@ -126,7 +207,7 @@ pub fn SendMessagePage(username: String) -> Element {
     let sender_id = {
         let guard = user_id.read();
         match &*guard {
-            Some(Ok(id)) => id.clone(),
+            Some(Ok(id)) => *id,
             Some(Err(e)) => {
                 web_sys::console::error_1(&e.to_string().into());
                 return rsx! { p { "Failed to load your user id." } };
@@ -146,23 +227,23 @@ pub fn SendMessagePage(username: String) -> Element {
             h2 { "Chat with {receiver_name}" }
 
             div {
-                match &*decrypted_conversation.read() {
+                match &*processed_conversation.read() {
                     Some(Ok(messages)) => rsx! {
                         if messages.is_empty() {
                             p { "No messages yet." }
                         } else {
-                            for (msg, text) in messages {
+                            for msg in messages {
                                 if msg.sender_id == sender_id {
                                     div {
                                         strong { "You" }
                                         br {}
-                                        p { "{text}" }
+                                        p { "{msg.message}" }
                                     }
                                 } else {
                                     div {
                                         strong { "{receiver_name}" }
                                         br {}
-                                        p { "{text}" }
+                                        p { "{msg.message}" }
                                     }
                                 }
                             }
@@ -193,10 +274,11 @@ pub fn SendMessagePage(username: String) -> Element {
 
                     let key = public_key.clone();
                     let mut conversation_handle = conversation;
+                    let mut local_messages_handle = local_messages;
                     let mut message_handle = message;
 
-                    let s_id = sender_id.clone();
-                    let r_id = receiver_id.clone();
+                    let s_id = sender_id;
+                    let r_id = receiver_id;
 
                     spawn(async move {
                         match encrypt_message(&msg_text, &key).await {
@@ -206,7 +288,22 @@ pub fn SendMessagePage(username: String) -> Element {
                                         web_sys::console::log_1(
                                             &format!("{:#?}", response).into(),
                                         );
+
+                                        if let Err(e) = indexeddb::save_message(SentMessage {
+                                            sender_id: s_id,
+                                            receiver_id: r_id,
+                                            message: msg_text.clone(),
+                                            timestamp: js_sys::Date::now() as i64,
+                                        })
+                                        .await
+                                        {
+                                            web_sys::console::error_1(
+                                                &format!("Failed to cache message: {e}").into(),
+                                            );
+                                        }
+
                                         message_handle.set(String::new());
+                                        local_messages_handle.restart();
                                         conversation_handle.restart();
                                     }
                                     Err(e) => {
@@ -216,9 +313,9 @@ pub fn SendMessagePage(username: String) -> Element {
                                     }
                                 }
                             }
-                            Err(_) => {
+                            Err(e) => {
                                 web_sys::console::error_1(
-                                    &"Encryption failed".into(),
+                                    &format!("Encryption failed: {e:?}").into(),
                                 );
                             }
                         }

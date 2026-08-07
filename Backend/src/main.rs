@@ -19,7 +19,7 @@ async fn main() -> std::io::Result<()> {
                 Cors::default()
                     .allowed_origin("http://127.0.0.1:8080")
                     .allowed_origin("http://localhost:8080")
-                    .allowed_methods(vec!["GET", "POST"])
+                    .allowed_methods(vec!["GET", "POST", "OPTIONS"])
                     .allowed_headers(vec![http::header::CONTENT_TYPE, http::header::ACCEPT])
                     .max_age(3600),
             )

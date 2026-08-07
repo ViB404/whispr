@@ -2254,6 +2254,7 @@ dependencies = [
  "js-sys",
  "reqwest 0.13.4",
  "serde",
+ "serde-wasm-bindgen",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
