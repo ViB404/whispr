@@ -1,5 +1,5 @@
 use anyhow::Error;
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use serde::Serialize;
 
 pub async fn connect_database() -> Result<Connection, Error> {
@@ -47,7 +47,7 @@ fn init_database(conn: &Connection) -> Result<(), Error> {
         sender_id INTEGER NOT NULL,
         receiver_id INTEGER NOT NULL,
         ciphertext BLOB NOT NULL,
-        created_at INTEGER NOT NULL DEFAULT (unixepoch())
+        created_at INTEGER NOT NULL DEFAULT (unixepoch('subsec') * 1000)
     );
     ",
     )?;
