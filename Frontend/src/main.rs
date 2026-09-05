@@ -49,7 +49,7 @@ fn Home() -> Element {
         button {
             onclick: move |_| {
                 let user = username();
-                
+
                 spawn(async move {
                     match register(user).await {
                         Ok(_) => {

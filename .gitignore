@@ -7,5 +7,16 @@
 **/*.rs.bk
 
 **/*.db
+**/*.sqlite
+**/*.sqlite3
 
-.idea
+# JetBrains
+.idea/
+
+# VS Code
+.vscode/
+
+# Vim / Emacs
+*.swp
+*.swo
+*~

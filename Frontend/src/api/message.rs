@@ -66,9 +66,7 @@ pub async fn get_conversation(user1: i64, user2: i64) -> Result<Vec<Message>> {
     let client = reqwest::Client::new();
 
     let response = client
-        .get(format!(
-            "http://127.0.0.1:6767/messages/{user1}/{user2}"
-        ))
+        .get(format!("http://127.0.0.1:6767/messages/{user1}/{user2}"))
         .send()
         .await?;
 

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::{
     api::{
         message::{get_conversation, send_message, Message},
@@ -10,25 +8,27 @@ use crate::{
 };
 
 use dioxus::prelude::*;
+use web_sys::console::log_1;
 
 pub fn merge_messages(
     current_user_id: i64,
-    local: Vec<SentMessage>,
+    mut local: Vec<SentMessage>,
     server: Vec<Message>,
 ) -> Vec<SentMessage> {
-    let mut local_map: HashMap<(i64, i64, i64), SentMessage> = local
-        .into_iter()
-        .map(|m| ((m.sender_id, m.receiver_id, m.timestamp), m))
-        .collect();
-
     let mut merged: Vec<SentMessage> = Vec::with_capacity(server.len());
+    const TIMESTAMP_TOLERANCE_MS: i64 = 5_000;
 
     for msg in server {
         let timestamp = msg.created_at * 1000;
 
         if msg.sender_id == current_user_id {
-            if let Some(local_msg) = local_map.remove(&(msg.sender_id, msg.receiver_id, timestamp))
-            {
+            if let Some(pos) = local.iter().position(|l| {
+                l.sender_id == msg.sender_id
+                    && l.receiver_id == msg.receiver_id
+                    && (l.timestamp - timestamp).abs() <= TIMESTAMP_TOLERANCE_MS
+            }) {
+                let mut local_msg = local.remove(pos);
+                local_msg.timestamp = timestamp;
                 merged.push(local_msg);
             } else {
                 merged.push(SentMessage {
@@ -165,13 +165,17 @@ pub fn SendMessagePage(username: String) -> Element {
             }
 
             let merged = merge_messages(c_id, local_state, server_msgs.clone());
-            let mut final_list = Vec::with_capacity(merged.len());
+            let mut final_list: Vec<SentMessage> = Vec::with_capacity(merged.len());
+            let mut available_server_msgs = server_msgs.clone();
+            const TIMESTAMP_TOLERANCE_MS: i64 = 5_000;
 
             for mut msg in merged {
                 if msg.sender_id != c_id {
-                    if let Some(server_msg) = server_msgs.iter().find(|sm| {
-                        sm.sender_id == msg.sender_id && sm.created_at * 1000 == msg.timestamp
+                    if let Some(pos) = available_server_msgs.iter().position(|sm| {
+                        let diff = (sm.created_at * 1000 - msg.timestamp).abs();
+                        sm.sender_id == msg.sender_id && diff <= TIMESTAMP_TOLERANCE_MS
                     }) {
+                        let server_msg = available_server_msgs.remove(pos);
                         match decrypt_message(&server_msg.ciphertext, &key).await {
                             Ok(text) => msg.message = text,
                             Err(e) => {
@@ -183,6 +187,7 @@ pub fn SendMessagePage(username: String) -> Element {
                         }
                     }
                 }
+
                 final_list.push(msg);
             }
 

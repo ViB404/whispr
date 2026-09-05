@@ -1,6 +1,6 @@
+use crate::database::{NewUser, get_user_by_username};
 use crate::database::{connect_database, save_user};
-use crate::database::{get_user_by_username, NewUser};
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, post, web};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
