@@ -228,106 +228,255 @@ pub fn SendMessagePage(username: String) -> Element {
     let public_key = receiver.public_key.clone();
 
     rsx! {
+    div {
+        style: "
+            min-height: 100vh;
+            background: #f5f5f5;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        ",
+
         div {
-            h2 { "Chat with {receiver_name}" }
+            style: "
+                width: 420px;
+                height: 600px;
+                background: white;
+                border-radius: 14px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            ",
 
             div {
+                style: "
+                    padding: 18px 20px;
+                    border-bottom: 1px solid #eee;
+                ",
+
+                h2 {
+                    style: "
+                        margin: 0;
+                        font-size: 20px;
+                    ",
+                    "Chat with {receiver_name}"
+                }
+            }
+
+            div {
+                style: "
+                    flex: 1;
+                    padding: 20px;
+                    overflow-y: auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                ",
+
                 match &*processed_conversation.read() {
                     Some(Ok(messages)) => rsx! {
                         if messages.is_empty() {
-                            p { "No messages yet." }
+                            div {
+                                style: "
+                                    flex: 1;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    color: #888;
+                                    font-size: 14px;
+                                ",
+                                "No messages yet."
+                            }
                         } else {
                             for msg in messages {
                                 if msg.sender_id == sender_id {
                                     div {
-                                        strong { "You" }
-                                        br {}
-                                        p { "{msg.message}" }
+                                        style: "
+                                            align-self: flex-end;
+                                            max-width: 75%;
+                                            padding: 10px 14px;
+                                            background: #111;
+                                            color: white;
+                                            border-radius: 12px 12px 2px 12px;
+                                        ",
+
+                                        p {
+                                            style: "
+                                                margin: 0;
+                                                font-size: 14px;
+                                                word-break: break-word;
+                                            ",
+                                            "{msg.message}"
+                                        }
                                     }
                                 } else {
                                     div {
-                                        strong { "{receiver_name}" }
-                                        br {}
-                                        p { "{msg.message}" }
+                                        style: "
+                                            align-self: flex-start;
+                                            max-width: 75%;
+                                            padding: 10px 14px;
+                                            background: #eee;
+                                            color: #111;
+                                            border-radius: 12px 12px 12px 2px;
+                                        ",
+
+                                        p {
+                                            style: "
+                                                margin: 0;
+                                                font-size: 14px;
+                                                word-break: break-word;
+                                            ",
+                                            "{msg.message}"
+                                        }
                                     }
                                 }
                             }
                         }
                     },
+
                     Some(Err(e)) => rsx! {
-                        p { "Failed to load conversation: {e}" }
+                        div {
+                            style: "
+                                padding: 20px;
+                                color: #d00;
+                                font-size: 14px;
+                            ",
+                            "Failed to load conversation: {e}"
+                        }
                     },
+
                     None => rsx! {
-                        p { "Loading conversation..." }
+                        div {
+                            style: "
+                                flex: 1;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                color: #888;
+                                font-size: 14px;
+                            ",
+                            "Loading conversation..."
+                        }
                     },
                 }
             }
 
-            input {
-                r#type: "text",
-                placeholder: "Enter message",
-                value: "{message}",
-                oninput: move |e| {
-                    message.set(e.value());
-                },
-            }
+            div {
+                style: "
+                    padding: 14px;
+                    border-top: 1px solid #eee;
+                    display: flex;
+                    gap: 10px;
+                ",
 
-            button {
-                onclick: move |_| {
-                    let msg_text = message();
-                    if msg_text.is_empty() { return; }
+                input {
+                    style: "
+                        flex: 1;
+                        min-width: 0;
+                        padding: 11px 13px;
+                        border: 1px solid #ddd;
+                        border-radius: 8px;
+                        outline: none;
+                        font-size: 14px;
+                        box-sizing: border-box;
+                    ",
 
-                    let key = public_key.clone();
-                    let mut conversation_handle = conversation;
-                    let mut local_messages_handle = local_messages;
-                    let mut message_handle = message;
+                    r#type: "text",
+                    placeholder: "Enter message...",
+                    value: "{message}",
 
-                    let s_id = sender_id;
-                    let r_id = receiver_id;
+                    oninput: move |e| {
+                        message.set(e.value());
+                    },
+                }
 
-                    spawn(async move {
-                        match encrypt_message(&msg_text, &key).await {
-                            Ok(ciphertext) => {
-                                match send_message(s_id, r_id, ciphertext).await {
-                                    Ok(response) => {
-                                        web_sys::console::log_1(
-                                            &format!("{:#?}", response).into(),
-                                        );
+                button {
+                    style: "
+                        padding: 11px 16px;
+                        border: none;
+                        border-radius: 8px;
+                        background: #111;
+                        color: white;
+                        font-size: 14px;
+                        cursor: pointer;
+                        white-space: nowrap;
+                    ",
 
-                                        if let Err(e) = indexeddb::save_message(SentMessage {
-                                            sender_id: s_id,
-                                            receiver_id: r_id,
-                                            message: msg_text.clone(),
-                                            timestamp: js_sys::Date::now() as i64,
-                                        })
-                                        .await
-                                        {
-                                            web_sys::console::error_1(
-                                                &format!("Failed to cache message: {e}").into(),
+                    onclick: move |_| {
+                        let msg_text = message();
+
+                        if msg_text.is_empty() {
+                            return;
+                        }
+
+                        let key = public_key.clone();
+                        let mut conversation_handle = conversation;
+                        let mut local_messages_handle = local_messages;
+                        let mut message_handle = message;
+
+                        let s_id = sender_id;
+                        let r_id = receiver_id;
+
+                        spawn(async move {
+                            match encrypt_message(&msg_text, &key).await {
+                                Ok(ciphertext) => {
+                                    match send_message(s_id, r_id, ciphertext).await {
+                                        Ok(response) => {
+                                            web_sys::console::log_1(
+                                                &format!("{:#?}", response).into(),
                                             );
+
+                                            if let Err(e) =
+                                                indexeddb::save_message(SentMessage {
+                                                    sender_id: s_id,
+                                                    receiver_id: r_id,
+                                                    message: msg_text.clone(),
+                                                    timestamp: js_sys::Date::now() as i64,
+                                                })
+                                                .await
+                                            {
+                                                web_sys::console::error_1(
+                                                    &format!(
+                                                        "Failed to cache message: {e}"
+                                                    )
+                                                    .into(),
+                                                );
+                                            }
+
+                                            message_handle.set(String::new());
+                                            local_messages_handle.restart();
+                                            conversation_handle.restart();
                                         }
 
-                                        message_handle.set(String::new());
-                                        local_messages_handle.restart();
-                                        conversation_handle.restart();
-                                    }
-                                    Err(e) => {
-                                        web_sys::console::error_1(
-                                            &format!("Failed to send message: {e}").into(),
-                                        );
+                                        Err(e) => {
+                                            web_sys::console::error_1(
+                                                &format!(
+                                                    "Failed to send message: {e}"
+                                                )
+                                                .into(),
+                                            );
+                                        }
                                     }
                                 }
+
+                                Err(e) => {
+                                    web_sys::console::error_1(
+                                        &format!(
+                                            "Encryption failed: {e:?}"
+                                        )
+                                        .into(),
+                                    );
+                                }
                             }
-                            Err(e) => {
-                                web_sys::console::error_1(
-                                    &format!("Encryption failed: {e:?}").into(),
-                                );
-                            }
-                        }
-                    });
-                },
-                "Send Message"
+                        });
+                    },
+
+                    "Send"
+                }
             }
         }
     }
+}
 }
