@@ -1,7 +1,7 @@
 use crate::routes::config;
 use actix_cors::Cors;
 use actix_web::middleware::Logger;
-use actix_web::{http, App, HttpServer};
+use actix_web::{App, HttpServer, http};
 use env_logger::Env;
 
 pub mod database;

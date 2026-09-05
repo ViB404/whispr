@@ -47,10 +47,10 @@ pub async fn send_message(payload: web::Json<SendMessageRequest>) -> impl Respon
     }
 }
 
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, post, web};
 
 use crate::database::{
-    connect_database, get_conversation, get_message_by_id, save_message, NewMessage,
+    NewMessage, connect_database, get_conversation, get_message_by_id, save_message,
 };
 
 #[get("/messages/{id}")]
